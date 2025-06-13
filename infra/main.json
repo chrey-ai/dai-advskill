@@ -1,0 +1,124 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.36.1.42791",
+      "templateHash": "12480893454785414771"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "chainlit-sql-server"
+    },
+    "sqlAdminUsername": {
+      "type": "string",
+      "defaultValue": "tdadmin"
+    },
+    "sqlAdminPassword": {
+      "type": "securestring"
+    },
+    "databaseName": {
+      "type": "string",
+      "defaultValue": "chainlitdb"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[parameters('sqlServerName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "administratorLogin": "[parameters('sqlAdminUsername')]",
+        "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+        "version": "12.0"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), 'AllowAllWindowsAzureIps')]",
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), parameters('databaseName'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "collation": "SQL_Latin1_General_CP1_CI_AS",
+        "maxSizeBytes": 10737418240,
+        "autoPauseDelay": 30,
+        "minCapacity": 1,
+        "readScale": "Enabled",
+        "zoneRedundant": false,
+        "sampleName": "AdventureWorksLT"
+      },
+      "sku": {
+        "name": "GP_S_Gen5_1",
+        "tier": "GeneralPurpose",
+        "family": "Gen5",
+        "capacity": 1
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "chainlit-appserviceplan",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "B1",
+        "tier": "Basic"
+      }
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "chainlit-webapp",
+      "location": "[parameters('location')]",
+      "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', 'chainlit-appserviceplan')]",
+        "httpsOnly": true
+      },
+      "tags": {
+        "azd-service-name": "chainlit-webapp"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', 'chainlit-appserviceplan')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "sqlServerName": {
+      "type": "string",
+      "value": "[parameters('sqlServerName')]"
+    },
+    "sqlAdminUsername": {
+      "type": "string",
+      "value": "[parameters('sqlAdminUsername')]"
+    },
+    "sqlDbName": {
+      "type": "string",
+      "value": "[parameters('databaseName')]"
+    }
+  }
+}
