@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.36.1.42791",
-      "templateHash": "12480893454785414771"
+      "templateHash": "7647372281336900847"
     }
   },
   "parameters": {
@@ -45,6 +45,20 @@
       }
     },
     {
+      "type": "Microsoft.Sql/servers/administrators",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[format('{0}/{1}', parameters('sqlServerName'), 'ActiveDirectory')]",
+      "properties": {
+        "administratorType": "ActiveDirectory",
+        "login": "sql-admins",
+        "sid": "4f7380aa-3fed-4f3e-a4e0-49af84d53987",
+        "tenantId": "4a302c0b-d1fa-49e5-bc80-a008b7ca6eb4"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', parameters('sqlServerName'))]"
+      ]
+    },
+    {
       "type": "Microsoft.Sql/servers/firewallRules",
       "apiVersion": "2022-02-01-preview",
       "name": "[format('{0}/{1}', parameters('sqlServerName'), 'AllowAllWindowsAzureIps')]",
@@ -66,7 +80,6 @@
         "maxSizeBytes": 10737418240,
         "autoPauseDelay": 30,
         "minCapacity": 1,
-        "readScale": "Enabled",
         "zoneRedundant": false,
         "sampleName": "AdventureWorksLT"
       },
@@ -105,6 +118,63 @@
       "dependsOn": [
         "[resourceId('Microsoft.Web/serverfarms', 'chainlit-appserviceplan')]"
       ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2023-04-15",
+      "name": "chainlit-cosmosdb",
+      "location": "[parameters('location')]",
+      "kind": "GlobalDocumentDB",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "locations": [
+          {
+            "locationName": "[parameters('location')]",
+            "failoverPriority": 0,
+            "isZoneRedundant": false
+          }
+        ],
+        "consistencyPolicy": {
+          "defaultConsistencyLevel": "Session"
+        },
+        "capabilities": [
+          {
+            "name": "EnableServerless"
+          }
+        ]
+      },
+      "tags": {
+        "azd-service-name": "cosmosdb"
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2022-12-01",
+      "name": "chainlit-postgres",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "pgadmin",
+        "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+        "version": "15",
+        "storage": {
+          "storageSizeGB": 32
+        },
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        },
+        "createMode": "Default"
+      },
+      "sku": {
+        "name": "Standard_B1ms",
+        "tier": "Burstable"
+      },
+      "tags": {
+        "azd-service-name": "postgresql"
+      }
     }
   ],
   "outputs": {

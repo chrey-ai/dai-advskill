@@ -15,9 +15,6 @@ resource sqlServer 'Microsoft.Sql/servers@2022-02-01-preview' = {
     administratorLogin: sqlAdminUsername
     administratorLoginPassword: sqlAdminPassword
     version: '12.0'
-    azureADOnlyAuthentication: {
-      azureADOnlyAuthentication: true
-    }
   }
 }
 
@@ -81,6 +78,61 @@ resource webApp 'Microsoft.Web/sites@2022-03-01' = {
   }
   tags: {
     'azd-service-name': 'chainlit-webapp'
+  }
+}
+
+resource cosmosDbAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
+  name: 'chainlit-cosmosdb'
+  location: location
+  kind: 'GlobalDocumentDB'
+  properties: {
+    databaseAccountOfferType: 'Standard'
+    locations: [
+      {
+        locationName: location
+        failoverPriority: 0
+        isZoneRedundant: false
+      }
+    ]
+    consistencyPolicy: {
+      defaultConsistencyLevel: 'Session'
+    }
+    capabilities: [
+      {
+        name: 'EnableServerless'
+      }
+    ]
+  }
+  tags: {
+    'azd-service-name': 'cosmosdb'
+  }
+}
+
+resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2022-12-01' = {
+  name: 'chainlit-postgres'
+  location: location
+  properties: {
+    administratorLogin: 'pgadmin'
+    administratorLoginPassword: sqlAdminPassword
+    version: '15'
+    storage: {
+      storageSizeGB: 32
+    }
+    backup: {
+      backupRetentionDays: 7
+      geoRedundantBackup: 'Disabled'
+    }
+    highAvailability: {
+      mode: 'Disabled'
+    }
+    createMode: 'Default'
+  }
+  sku: {
+    name: 'Standard_B1ms'
+    tier: 'Burstable'
+  }
+  tags: {
+    'azd-service-name': 'postgresql'
   }
 }
 
