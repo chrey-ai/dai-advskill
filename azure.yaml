@@ -9,8 +9,8 @@ services:
     azureSqlDb:
       enabled: true
       databaseName: chainlitdb
-      serverName: chainlit-sql-server
-      adminUsername: tdadmin
+      serverName: postgresql
+      adminUsername: pgadmin
       adminPassword: "${AZURE_SQL_ADMIN_PASSWORD}"
       sku: Basic
       tier: Basic
